@@ -19,7 +19,7 @@ def create_user():
         user_repository = current_app.user_repository
         user_repository.create_user(user_data.model_dump())
 
-        return jsonify(user_data), 201
+        return jsonify(user_data.model_dump()), 201
     except ValidationError as e:
         return jsonify({'error': e.errors()}), 400
     except Exception as e:

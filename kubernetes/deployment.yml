@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authentication
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authentication
+  template:
+    metadata:
+      labels:
+        app: authentication
+    spec:
+      containers:
+        - name: authentication
+          image: rickwalking/authentication
+          ports:
+            - containerPort: 80
+          env:
+            - name: SQLALCHEMY_DATABASE_URI
+              valueFrom:
+                secretKeyRef:
+                  name: authentication-env
+                  key: SQLALCHEMY_DATABASE_URI
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: authentication-env
+                  key: SECRET_KEY

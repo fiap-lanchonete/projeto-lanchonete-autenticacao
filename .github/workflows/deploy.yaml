@@ -1,0 +1,32 @@
+name: Deploy CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.10]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Use Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: install dependencies
+      run: pip install --no-cache-dir --upgrade -r requirements.txt
+  
+    - name: Login to DockerHub
+      run: docker login -u rickwalking -p ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      run: |
+        docker build . -t rickwalking/authentication:latest
+        docker push rickwalking/authentication:latest

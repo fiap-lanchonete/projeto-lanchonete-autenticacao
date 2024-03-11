@@ -2,6 +2,8 @@
 
 from flask import Flask
 
+from .adapters.events.rabbit_mq.rabbit_mq_event_repository import RabbitMqEventRepository
+
 from .adapters.controllers import user_controller
 from .adapters.database.repositories.user_repository import UserRepository
 from .adapters.database.models.base import Base, db
@@ -27,6 +29,8 @@ def create_app(config_filename=None):
     setattr(app, 'db', db)
 
     user_repository = UserRepository(db)
+    rabbit_mq_event_repository = RabbitMqEventRepository(app)
     setattr(app, 'user_repository', user_repository)
+    setattr(app, 'rabbit_mq_event_repository', rabbit_mq_event_repository)
 
     return app

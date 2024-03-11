@@ -1,10 +1,9 @@
 """Module for user-related operations in the Flask application."""
 
 from datetime import datetime, timedelta
+import uuid
 from flask import current_app
 from flask import Blueprint, request, jsonify
-from pydantic import ValidationError
-
 import jwt
 from jwt.exceptions import InvalidTokenError
 
@@ -21,7 +20,7 @@ def create_user():
         A JSON response indicating the outcome of the create operation.
     """
     try:
-        user_data = CreateUserDto(**request.json)
+        user_data = CreateUserDto(**request.get_json())
 
         user_repository = getattr(current_app, 'user_repository', None)
 
@@ -99,7 +98,22 @@ def login():
             'exp': datetime.utcnow() + timedelta(days=1)
         },  current_app.config['SECRET_KEY'], algorithm="HS256")
 
-        return jsonify({'message': 'Login successful', 'token': encoded_jwt }), 200
+        rabbit_mq_event_repository = getattr(current_app, 'rabbit_mq_event_repository', None)
+
+        if not rabbit_mq_event_repository:
+            return jsonify({'error': 'Internal error'}), 500
+
+        idempotent_key = str(uuid.uuid4())
+
+        rabbit_mq_event_repository.publish_event({
+            'type': 'user_logged_in',
+            'data': {
+                'user_id': user.id,
+                'idempotent_key': idempotent_key
+            }
+        })
+
+        return jsonify({'idempotent_key': idempotent_key, 'token': encoded_jwt }), 200
     except Exception as e:
         current_app.logger.error(f"Unexpected error: {str(e)}")
 

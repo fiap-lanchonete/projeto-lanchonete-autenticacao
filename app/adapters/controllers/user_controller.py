@@ -106,9 +106,9 @@ def login():
         idempotent_key = str(uuid.uuid4())
 
         rabbit_mq_event_repository.publish_event({
-            'type': 'user_logged_in',
+            'pattern': 'identify_user',
             'data': {
-                'user_id': user.id,
+                'cpf': int(user.cpf),
                 'idempotent_key': idempotent_key
             }
         })

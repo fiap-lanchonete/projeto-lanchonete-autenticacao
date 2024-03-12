@@ -25,40 +25,31 @@ class RabbitMqEventRepository:
             )
         )
 
-        self.setup_exchange(app)
-
-    def setup_exchange(self, app):
-        """
-        Sets up the exchange on the RabbitMQ broker.
-        """
-        channel = self.connection.channel()
-
-        self.exchange_name = app.config['RABBITMQ_EXCHANGE_NAME']
         self.routing_key = app.config['RABBITMQ_ROUTING_KEY']
-
-        channel.exchange_declare(
-            exchange=self.exchange_name,
-            exchange_type='topic',
-            durable=True
-        )
 
     def publish_event(self, event_data: dict):
         """
         Publishes an event to the RabbitMQ broker.
         """
         channel = self.connection.channel()
-        channel.queue_declare(queue=current_app.config['RABBITMQ_QUEUE_NAME'])
+        channel.queue_declare(
+            queue=current_app.config['RABBITMQ_QUEUE_NAME'],
+            durable=True
+        )
 
         channel.basic_publish(
-            exchange=self.exchange_name,
-            routing_key=self.routing_key,
+            exchange='',
+            routing_key=current_app.config['RABBITMQ_ROUTING_KEY'],
             body=json.dumps(event_data),
-            properties=pika.BasicProperties(
-                delivery_mode=2,
-            )
         )
 
         if current_app.config['DEBUG']:
-            print(f"sent to exchange {self.exchange_name} with data: {event_data}")
+            print(f"sent to exchange with data: {event_data}")
 
-        self.connection.close()
+    def close_connection(self):
+        """
+        Closes the RabbitMQ connection.
+        """
+        if self.connection and self.connection.is_open:
+            self.connection.close()
+            print('RabbitMQ connection closed.')

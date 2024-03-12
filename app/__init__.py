@@ -1,5 +1,6 @@
 """Module for the Flask application."""
 
+import atexit
 from flask import Flask
 
 from .adapters.events.rabbit_mq.rabbit_mq_event_repository import RabbitMqEventRepository
@@ -30,7 +31,10 @@ def create_app(config_filename=None):
 
     user_repository = UserRepository(db)
     rabbit_mq_event_repository = RabbitMqEventRepository(app)
+
     setattr(app, 'user_repository', user_repository)
     setattr(app, 'rabbit_mq_event_repository', rabbit_mq_event_repository)
+
+    atexit.register(rabbit_mq_event_repository.close_connection)
 
     return app

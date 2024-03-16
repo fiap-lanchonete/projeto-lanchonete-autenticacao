@@ -108,7 +108,9 @@ def login():
         rabbit_mq_event_repository.publish_event({
             'pattern': 'identify_user',
             'data': {
-                'cpf':user.cpf,
+                'name': user.name,
+                'cpf': user.cpf,
+                'email': user.email,
                 'idempotent_key': idempotent_key
             }
         })

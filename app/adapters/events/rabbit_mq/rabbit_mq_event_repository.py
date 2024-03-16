@@ -21,7 +21,8 @@ class RabbitMqEventRepository:
             pika.ConnectionParameters(
                 host=app.config['RABBITMQ_HOST'],
                 port=app.config['RABBITMQ_PORT'],
-                credentials=credentials
+                credentials=credentials,
+                heartbeat=int(app.config['RABBITMQ_HEARTBEAT']),
             )
         )
 

@@ -1,6 +1,7 @@
 """Module for the Flask application."""
 
 import atexit
+import os
 from flask import Flask
 
 from .adapters.events.rabbit_mq.rabbit_mq_event_repository import RabbitMqEventRepository
@@ -10,12 +11,12 @@ from .adapters.database.repositories.user_repository import UserRepository
 from .adapters.database.models.base import Base, db
 from .adapters.database.models.user import User
 
-def create_app(config_filename=None):
+def create_app():
     """Create a new Flask application."""
     app = Flask(__name__)
+    app.config.from_pyfile('settings.py', silent=False)
 
-    if config_filename is not None:
-        app.config.from_pyfile(config_filename, silent=False)
+    print(app.config)
 
     app.register_blueprint(
         user_controller.user_blueprint,

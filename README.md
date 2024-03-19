@@ -18,7 +18,7 @@ Em resumo, um sistema de controle de pedidos é essencial para garantir que a la
 Para solucionar o problema, a lanchonete irá investir em um sistema de autoatendimento de fast food, que é composto por uma série de dispositivos e interfaces que permitem aos clientes selecionar e fazer pedidos sem precisar interagir com um atendente, com as seguintes
 
 ## REPOSITÓRIOS:
-  - [Repositório do serviço de autenticação](https://github.com/fiap-lanchonete/auth-lambda-python)
+  - [Repositório do serviço de autenticação](https://github.com/fiap-lanchonete/projeto-lanchonete-autenticacao)
   - [Repositório para Infra Kubernetes](https://github.com/fiap-lanchonete/projeto-lanchonete-infra)
   - [Repositório para infra do banco de dados](https://github.com/fiap-lanchonete/infra-db)
   - [Repositório do serviço de pagamento](https://github.com/fiap-lanchonete/fiap-payment)
@@ -45,16 +45,16 @@ Para esta fase, foram utilizados os seguintes bancos de dados:
 ### Estrutura dos Bancos
 
 #### Serviço de Pedido
-![ERD](https://i.imgur.com/eAurhkh.png)
+![ERD](https://i.imgur.com/dYDdQDp.png)
 
 #### Serviço de Produção
-![ERD](https://i.imgur.com/k7G0VlK.png)
+![ERD](https://i.imgur.com/FpVB43m.png)
 
 #### Serviço de Pagamento
-![ERD](https://i.imgur.com/4z0n9Id.png)
+![ERD](https://i.imgur.com/wdyexbz.png)
 
 ## AUTENTICAÇÃO
-![Authentication Diagram](https://i.imgur.com/jhxn4db.jpg)
+![Authentication Diagram](https://i.imgur.com/6Qjckdd.png)
 
 O diagrama acima ilustra o fluxo de autenticação do nosso sistema. O usuário inicia o processo fornecendo o CPF, ou de forma anônima. Em seguida, o sistema valida essas credenciais e, se estiverem corretas, gera um token de acesso. Este token é então usado para autenticar todas as solicitações subsequentes do usuário. Isso garante que apenas usuários autenticados possam acessar recursos protegidos (criação de pedido).
 
@@ -73,7 +73,7 @@ O diagrama acima ilustra o fluxo de autenticação do nosso sistema. O usuário 
 
 #### Pagamento
 
-- **POST /process** Iniciar um pagamento.
+- **POST /webhook/event** Receber eventos do mercado pago.
 
 - **GET /status/:id** Verificar status do pagamento.
 
@@ -132,6 +132,26 @@ A arquitetura dessa API segue os princípios de Arquitetura Hexagonal (Ports and
 
   * Esquema de Domain Driven Design (DDD) no [Miro](https://miro.com/welcomeonboard/TG9pRTJMU1BNb2d4WUZvdE9PVHd1cEZudmpaczNhdDNMOVVmeDE0S0VOZkVDSmFDSG5uaU0waUZzdFV5Q1h5aXwzNDU4NzY0NTU1MDkxMDI0MTAxfDI=?share_link_id=171801921364)
 
+## PADRÃO SAGA
+
+O padrão Saga foi escolhido para esta implementação devido à sua capacidade de gerenciar transações distribuídas complexas, garantindo a consistência dos dados em microserviços. A coreografia do Saga, em particular, permite que cada serviço execute suas operações de forma independente e comunique o resultado através de eventos, o que aumenta a resiliência e a escalabilidade do sistema.
+
+Neste caso, o processo começa com o Serviço de Autenticação, que é responsável por verificar a identidade do usuário e conceder permissões para realizar operações. Uma vez autenticado, uma chave de idempotência é criada e publicada na fila.
+Então, o pedido é criado pelo Serviço de Pedido, que então publica um evento indicando a criação do pedido.
+
+O Serviço de Pagamento escuta esse evento e, em seguida, processa o pagamento do pedido. Se o pagamento for bem-sucedido, ele publica um evento de sucesso de pagamento, que é capturado pelo Serviço de Produção. O Serviço de Produção, ao receber a confirmação do pagamento, inicia a preparação do pedido.
+
+Cada etapa do processo é realizada de forma assíncrona e independente, permitindo que o sistema seja mais tolerante a falhas e facilmente escalável. Além disso, a coreografia do Saga facilita a adição de novos serviços ou a modificação de processos existentes sem afetar significativamente os outros serviços, mantendo a integridade e a consistência dos dados em toda a aplicação.
+
+A chave de idempotência será uma referência única para cada pedido, garantindo que o pedido seja processado apenas uma vez, mesmo que o evento seja processado mais de uma vez.
+
+A escolha do Amazon MQ foi feita para garantir a confiabilidade e a escalabilidade do sistema. O Amazon MQ é um serviço de mensageria gerenciado que oferece suporte a mensagens de fila e tópico usando o protocolo de mensagens padrão do setor.
+
+![SAGA](https://i.imgur.com/EL9j6oH.png)
+
+## RELATÓRIO DE IMPACTO E PROTEÇÃO DE DADOS (RIPD) - Sistema Lanchonete
+[Link para o documento](https://docs.google.com/document/d/1C5Dg6JXd4F31ERT-66dxdwzVbRlQYMRUye0u9dnHn2Q/edit)
+
 ## KUBERNETES E DEPLOY
 
 Este projeto utiliza Kubernetes para orquestrar os serviços de Cadastro, Pagamento, Pedido e Produção. O processo de deploy é realizado através pipeline de Integração Contínua (CI) que é ativada sempre que um novo código é enviado para a branch principal do repositório.
@@ -168,15 +188,6 @@ Para desativar os serviços, execute o comando `docker-compose down`.
 Para acessar a documentação do Swagger, inicie o servidor e acesse a rota `/api` no seu navegador. Por exemplo, se o servidor estiver rodando localmente na porta 3000, você pode acessar a documentação do Swagger em `http://localhost:3000/api`.
 
 ## EVIDÊNCIAS DO DEPLOY
-A seguir, serão apresentadas algumas imagens como evidências do processo de deploy. Estas imagens demonstram as etapas concluídas com sucesso e garantem que o sistema está configurado e operando conforme esperado. A visualização destas evidências é crucial para a verificação e validação do processo de implantação dos serviços (como foi requisitado no desafio).
+A seguir, serão apresentadas o link para um vídeo com as evidências do processo de deploy. Os vídeos demonstram as etapas concluídas com sucesso e garantem que o sistema está configurado e operando conforme esperado. A visualização destas evidências é crucial para a verificação e validação do processo de implantação dos serviços (como foi requisitado no desafio).
 
-### Cluster
-<img src="https://i.imgur.com/BX4bFx4.jpg" />
-
-### Services
-
-<img src="https://i.imgur.com/lwxn3Fu.jpg" />
-
-### K9S logs
-
-<img src="https://i.imgur.com/XmrGkvE.jpg" />
+[Link para o vídeo](https://www.youtube.com/watch?v=8LHHZUPsQ8s&ab_channel=PedroMarins)

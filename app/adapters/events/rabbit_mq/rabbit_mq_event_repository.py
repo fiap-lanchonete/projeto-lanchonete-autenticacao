@@ -12,18 +12,10 @@ class RabbitMqEventRepository:
     This class is responsible for publishing events to the RabbitMQ broker.
     """
     def __init__(self, app):
-        credentials = pika.PlainCredentials(
-            username=app.config['RABBITMQ_USER'],
-            password=app.config['RABBITMQ_PASSWORD']
-        )
-
+        self.url_string = f"amqps://{app.config['RABBITMQ_USER']}:{app.config['RABBITMQ_PASSWORD']}@{app.config['RABBITMQ_HOST']}:{app.config['RABBITMQ_PORT']}/?heartbeat=0"
+        self.url_parameter = pika.URLParameters(self.url_string)
         self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                host=app.config['RABBITMQ_HOST'],
-                port=app.config['RABBITMQ_PORT'],
-                credentials=credentials,
-                heartbeat=int(app.config['RABBITMQ_HEARTBEAT']),
-            )
+            self.url_parameter
         )
 
         self.routing_key = app.config['RABBITMQ_ROUTING_KEY']
